@@ -4,11 +4,24 @@ const {
   CreateRequest,
   ConnectRequest,
   SupportedWallets,
-  NetworkService,
+  CashInRequest,
   TokenSupplyType,
   StableCoin,
 } = require("@hashgraph/stablecoin-npm-sdk");
+
+const {
+  PrivateKey,
+  Client,
+  TokenAssociateTransaction,
+  AccountBalanceQuery,
+} = require("@hashgraph/sdk");
 require("dotenv").config();
+
+const myAccountId = process.env.MY_ACCOUNT_ID;
+const myPrivateKey = PrivateKey.fromStringED25519(process.env.MY_PRIVATE_KEY);
+
+const client = Client.forTestnet();
+client.setOperator(myAccountId, myPrivateKey);
 
 const mirrorNodeConfig = {
   name: "Testnet Mirror Node",
@@ -83,8 +96,33 @@ const main = async () => {
   });
 
   request.validate();
-  await StableCoin.create(request);
+  const createResult = await StableCoin.create(request);
+  console.log("Create Result", createResult);
+
+  console.log(createResult.coin.tokenId.toString());
+
+  await associateToken(createResult.coin.tokenId.toString());
+
+  await new Promise((resolve) => setTimeout(resolve, 5000));
+
+  const cashInReq = new CashInRequest({
+    tokenId: createResult.coin.tokenId.toString(),
+    targetId: account.accountId.toString(),
+    amount: "100",
+  });
+
+  const result = await StableCoin.cashIn(cashInReq);
+  console.log("CashIn (Mint) Result", result);
 };
+
+async function associateToken(tokenId) {
+  let associateTokenTx = await new TokenAssociateTransaction()
+    .setAccountId(myAccountId)
+    .setTokenIds([tokenId])
+    .execute(client);
+  let receipt = await associateTokenTx.getReceipt(client);
+  console.log("Associate Token: ", receipt.status.toString());
+}
 
 try {
   main();
