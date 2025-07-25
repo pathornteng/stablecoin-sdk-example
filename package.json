@@ -9,6 +9,7 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@hashgraph/sdk": "^2.69.0",
     "@hashgraph/stablecoin-npm-sdk": "^2.1.5",
     "dotenv": "^17.2.0"
   }
